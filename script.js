@@ -6,16 +6,15 @@ document.addEventListener("DOMContentLoaded", () => {
   renderTasks();
 
   document.getElementById("themeToggle").addEventListener("change", toggleTheme);
+
   document.querySelectorAll(".filter-btn").forEach(btn =>
     btn.addEventListener("click", (e) => {
       filter = e.target.dataset.filter;
       document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
       e.target.classList.add("active");
       renderTasks();
-      document.querySelector(".filter-btn[data-filter='all']").classList.add("active");
     })
   );
-  
 
   if (localStorage.getItem("theme") === "dark") {
     document.body.classList.add("dark");
@@ -28,11 +27,17 @@ function addTask() {
   const text = input.value.trim();
   if (text === "") return;
 
-  const task = { id: Date.now(), text, completed: false };
+  const task = {
+    id: Date.now(),
+    text,
+    completed: false,
+    pinned: false,
+    createdAt: new Date().toISOString()
+  };
+
   tasks.push(task);
   saveTasks();
   renderTasks();
-
   input.value = "";
 }
 
@@ -47,9 +52,17 @@ function renderTasks() {
     filteredTasks = tasks.filter(t => t.completed);
   }
 
+  // Сортировка по закреплению и дате
+  filteredTasks.sort((a, b) => {
+    if (a.pinned && !b.pinned) return -1;
+    if (!a.pinned && b.pinned) return 1;
+    return new Date(a.createdAt) - new Date(b.createdAt);
+  });
+
   filteredTasks.forEach(task => {
     const li = document.createElement("li");
     li.setAttribute("data-id", task.id);
+    if (task.completed) li.classList.add("completed");
 
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
@@ -58,31 +71,55 @@ function renderTasks() {
 
     const span = document.createElement("span");
     span.textContent = task.text;
+    span.contentEditable = false;
+
     if (task.completed) {
       span.style.textDecoration = "line-through";
       span.style.opacity = "0.6";
     }
 
+    span.addEventListener("dblclick", () => {
+      span.contentEditable = true;
+      span.focus();
+    });
+
+    span.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        task.text = span.textContent.trim();
+        span.contentEditable = false;
+        saveTasks();
+        renderTasks();
+      }
+    });
+
+    const time = document.createElement("small");
+    time.textContent = new Date(task.createdAt).toLocaleString();
+
+    const pinBtn = document.createElement("button");
+    pinBtn.textContent = task.pinned ? "📌" : "📍";
+    pinBtn.onclick = () => {
+      task.pinned = !task.pinned;
+      saveTasks();
+      renderTasks();
+    };
+
     const delBtn = document.createElement("button");
-    delBtn.textContent = "Удалить";
+    delBtn.textContent = "🗑";
     delBtn.onclick = () => deleteTask(task.id);
 
     li.appendChild(checkbox);
     li.appendChild(span);
+    li.appendChild(time);
+    li.appendChild(pinBtn);
     li.appendChild(delBtn);
 
     list.appendChild(li);
-    updateCounter();
   });
+
+  updateCounter();
 }
-function updateCounter() {
-    const total = tasks.length;
-    const active = tasks.filter(t => !t.completed).length;
-    const completed = total - active;
-  
-    const counter = document.getElementById("taskCounter");
-    counter.textContent = `Всего: ${total} | Активные: ${active} | Завершённые: ${completed}`;
-  }  
+
 function toggleComplete(id) {
   const task = tasks.find(t => t.id === id);
   if (task) {
@@ -96,6 +133,31 @@ function deleteTask(id) {
   tasks = tasks.filter(t => t.id !== id);
   saveTasks();
   renderTasks();
+}
+
+function clearCompleted() {
+  tasks = tasks.filter(t => !t.completed);
+  saveTasks();
+  renderTasks();
+}
+
+function exportTasks() {
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(tasks));
+  const link = document.createElement('a');
+  link.setAttribute("href", dataStr);
+  link.setAttribute("download", "todo-list.json");
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+function updateCounter() {
+  const total = tasks.length;
+  const active = tasks.filter(t => !t.completed).length;
+  const completed = total - active;
+
+  const counter = document.getElementById("taskCounter");
+  counter.textContent = `Всего: ${total} | Активные: ${active} | Завершённые: ${completed}`;
 }
 
 function saveTasks() {

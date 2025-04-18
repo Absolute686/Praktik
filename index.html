@@ -19,14 +19,23 @@
       <input type="text" id="taskInput" placeholder="Введите задачу..." />
       <button onclick="addTask()">Добавить</button>
     </div>
+
     <div class="filters">
-    <button class="filter-btn" data-filter="all">Все</button>
-    <button class="filter-btn" data-filter="active">Активные</button>
-    <button class="filter-btn" data-filter="completed">Завершённые</button>
-  </div>
-  <div class="task-counter" id="taskCounter"></div>
+      <button class="filter-btn" data-filter="all">Все</button>
+      <button class="filter-btn" data-filter="active">Активные</button>
+      <button class="filter-btn" data-filter="completed">Завершённые</button>
+    </div>
+
+    <div class="task-counter" id="taskCounter"></div>
+
     <ul id="taskList"></ul>
+
+    <div class="export-clear-box">
+      <button onclick="exportTasks()">📤 Экспорт</button>
+      <button onclick="clearCompleted()">🧹 Очистить</button>
+    </div>
   </div>
+
   <script src="script.js"></script>
 </body>
 </html>
